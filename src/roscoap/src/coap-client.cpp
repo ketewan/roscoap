@@ -1,5 +1,18 @@
-#include <QtGui/QApplication>
-#include "trikCoapServer.h"
+#include <QApplication>
+#include <ros/ros.h>
+#include "std_msgs/Int32.h"
+#include <coap2/coap.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+
+coap_context_t  *ctx = nullptr;
+coap_session_t *session = nullptr;
+coap_address_t dst;
+coap_pdu_t *pdu = nullptr;
 
 int resolve_address(const char *host, const char *service, coap_address_t *dst) {
 	struct addrinfo *res, *ainfo;
@@ -40,7 +53,6 @@ void send_msg() {
                       coap_session_max_pdu_size(session));
   if (!pdu) {
     coap_log( LOG_EMERG, "cannot create PDU\n" );
-    goto finish;
   }
 
   /* add a Uri-Path option */
@@ -50,37 +62,35 @@ void send_msg() {
   /* and send the PDU */
   coap_send(session, pdu);
 
-  coap_run_once(ctx);
+  coap_run_once(ctx, 0);
 }
 
 void start(void) {
-		coap_set_log_level(LOG_DEBUG);
-	
-		coap_str_const_t ruri = { 5, (const uint8_t *)"hello" };
+	coap_set_log_level(LOG_DEBUG);
 
-		coap_startup();
+	coap_str_const_t ruri = { 5, (const uint8_t *)"hello" };
 
-		/* resolve destination address where server should be sent */
-		if (resolve_address("localhost", "5683", &dst) < 0) {
-			coap_log(LOG_CRIT, "failed to resolve address\n");
-			coap_free_context(this->ctx);
-			coap_cleanup();
-		}
+	coap_startup();
 
-		/* create CoAP context and a client session */
-		ctx = coap_new_context(nullptr);
+	/* resolve destination address where server should be sent */
+	  if (resolve_address("localhost", "5683", &dst) < 0) {
+		coap_log(LOG_CRIT, "failed to resolve address\n");
+	  }
 
-		if (!ctx || !(endpoint = coap_new_endpoint(ctx, &dst, COAP_PROTO_UDP))) {
-			coap_log(LOG_EMERG, "cannot initialize context\n");
-			coap_free_context(ctx);
-			coap_cleanup();
-		}
+	  /* create CoAP context and a client session */
+	  ctx = coap_new_context(nullptr);
 
-		resource = coap_resource_init(&ruri, 0);
-		coap_register_handler(resource, COAP_REQUEST_GET, hnd_get_hello);
-		coap_add_resource(ctx, resource);
+	  if (!ctx || !(session = coap_new_client_session(ctx, nullptr, &dst,
+		                                              COAP_PROTO_UDP))) {
+		coap_log(LOG_EMERG, "cannot create client session\n");
+	  }
 
-		init_resources();
+	  /* coap_register_response_handler(ctx, response_handler); */
+	  coap_register_response_handler(ctx, [](auto, auto, auto,
+		                                     coap_pdu_t *received,
+		                                     auto) {
+		                                    coap_show_pdu(LOG_INFO, received);
+});
 }
 
 void led_callback(const std_msgs::Int32 cmd) {
@@ -97,6 +107,8 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "standalone_trik_node");
     ros::NodeHandle nh;
     ros::Rate loopRate(1);
+
+	start();
 
     ros::Subscriber sub = nh.subscribe("led_cmd", 10, led_callback);
 
