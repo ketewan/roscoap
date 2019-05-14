@@ -93,31 +93,4 @@ void start(void) {
 });
 }
 
-void led_callback(const std_msgs::Int32 cmd) {
-	send_msg();
-}
-
-int main(int argc, char **argv) {
-    // start Qt server
-    int qargc = 2;
-    const char *qargv[] = {"standalone_trik_node", "-qws"}; // todo: try QApplication::Tty for console app?
-    QApplication app(qargc, (char **) qargv);
-
-    // init ROS node
-    ros::init(argc, argv, "standalone_trik_node");
-    ros::NodeHandle nh;
-    ros::Rate loopRate(1);
-
-	start();
-
-    ros::Subscriber sub = nh.subscribe("led_cmd", 10, led_callback);
-
-    while (ros::ok()) {
-        ros::spinOnce();
-        loopRate.sleep();
-    }
-
-    return 0;
-}
-
 

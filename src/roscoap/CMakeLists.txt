@@ -18,6 +18,6 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
  # /home/arsonist/Qt/5.9.6/gcc_64/
 )
-add_executable(coap-client src/coap-client.cpp)
-target_link_libraries(coap-client ${catkin_LIBRARIES} coap-2 Qt5::Widgets)
+add_executable(trik src/trik.cpp src/coap.cpp)
+target_link_libraries(trik ${catkin_LIBRARIES} coap-2 Qt5::Widgets)
 
