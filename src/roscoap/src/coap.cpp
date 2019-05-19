@@ -1,13 +1,6 @@
 #include <QApplication>
 #include "coap.h"
 
-
-TrikCoapClient::TrikCoapClient() {
-};
-
-TrikCoapClient::~TrikCoapClient() {
-};
-
 int TrikCoapClient::resolve_address(const char *host, const char *service, coap_address_t *dst) {
 	struct addrinfo *res, *ainfo;
 	struct addrinfo hints;
@@ -39,9 +32,10 @@ int TrikCoapClient::resolve_address(const char *host, const char *service, coap_
 	return len;
 }
 
-void TrikCoapClient::setPowerMotor(std::string name, int power) {
+void TrikCoapClient::setPowerMotor(QString name, int power) {
+	std::cout << "in set pwr motor" << std::endl;
 	/* construct CoAP message */
-	auto pdu = coap_pdu_init(COAP_MESSAGE_CON,
+	auto pdu = coap_pdu_init(COAP_MESSAGE_NON,
 		              COAP_REQUEST_GET,
 		              0 /* message id */,
 		              coap_session_max_pdu_size(session));
@@ -51,22 +45,21 @@ void TrikCoapClient::setPowerMotor(std::string name, int power) {
 
 	coap_add_option(pdu, COAP_OPTION_URI_PATH, 6, (unsigned char *)"motors");
 	
-	auto query = name + "=" + std::to_string(power);
+	auto query = name.toStdString() + "=" + std::to_string(power);
 	unsigned char *buf = (unsigned char *)query.c_str();
-	coap_add_option(pdu, COAP_OPTION_URI_QUERY, coap_opt_length(buf), coap_opt_value(buf));
+	coap_add_option(pdu, COAP_OPTION_URI_QUERY, query.length(), buf);
 
 	/* and send the PDU */
 	coap_send(session, pdu);
-
-	coap_run_once(ctx, 0);
 }
 
 void TrikCoapClient::start(void) {
+	std::cout << "started" << std::endl;
 	coap_set_log_level(LOG_DEBUG);
 	coap_startup();
 
 	/* resolve destination address where server should be sent */
-	if (resolve_address("10.0.40.106", "5683", &dst) < 0) {
+	if (resolve_address("192.168.1.100", "5683", &dst) < 0) {
 		coap_log(LOG_CRIT, "failed to resolve address\n");
 	}
 
@@ -82,8 +75,12 @@ void TrikCoapClient::start(void) {
 	coap_register_response_handler(ctx, [](auto, auto, auto,
 			                             coap_pdu_t *received,
 			                             auto) {
-			                            coap_show_pdu(LOG_INFO, received);
+			                            //coap_show_pdu(LOG_INFO, received);
 	});
+
+	while (true) {
+		coap_run_once(ctx, 0);
+	}
 }
 
 

@@ -1,13 +1,17 @@
 #pragma once
 
 #include <QThread>
+#include <QObject>
 #include <ros/ros.h>
 #include "std_msgs/Int32.h"
 #include <geometry_msgs/Twist.h>
 #include "coap.h"
 
-class TrikRosNode {
+class TrikRosNode : public QObject {
+	Q_OBJECT
+
     public:
+		virtual ~TrikRosNode() {};
         TrikRosNode(ros::NodeHandle *nodeHandle);
 
         void publishSensorsData(const ros::TimerEvent &event);
@@ -16,6 +20,9 @@ class TrikRosNode {
 
         void velocityCallback(const geometry_msgs::Twist twist);
 
+	signals:
+		void changePower(QString name, int power);
+	
 	private:
         ros::NodeHandle *nodeHandle_;
         ros::Timer timer;

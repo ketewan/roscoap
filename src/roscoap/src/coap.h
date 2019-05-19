@@ -9,16 +9,17 @@ class TrikCoapClient : public QObject {
 	Q_OBJECT
 
 public:
-	TrikCoapClient();
-	~TrikCoapClient();
+	virtual ~TrikCoapClient() {};
 	static int resolve_address(const char *host, const char *service, coap_address_t *dst);
-	Q_INVOKABLE void setPowerMotor(std::string name, int power);
-	Q_INVOKABLE void start(void);
-
+	
+public slots:
+	void setPowerMotor(QString name, int power);
+	void start();
+	
 private:
-	coap_context_t *ctx = nullptr;
+	coap_context_t *ctx;
 	coap_address_t dst;
-	coap_endpoint_t *endpoint = nullptr;
-	coap_session_t *session = nullptr;
+	coap_endpoint_t *endpoint;
+	coap_session_t *session;
 };
 
