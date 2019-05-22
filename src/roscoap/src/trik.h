@@ -6,15 +6,17 @@
 #include "std_msgs/Int32.h"
 #include <geometry_msgs/Twist.h>
 #include "coap.h"
+#include <QMap>
 
 class TrikRosNode : public QObject {
 	Q_OBJECT
-
+	
     public:
-		virtual ~TrikRosNode() {};
+		~TrikRosNode();
+
         TrikRosNode(ros::NodeHandle *nodeHandle);
 
-        void publishSensorsData(const ros::TimerEvent &event);
+        void subscribeForSensors();
 
         void ledCallback(const std_msgs::Int32 cmd);
 
@@ -23,12 +25,16 @@ class TrikRosNode : public QObject {
 	signals:
 		void changePower(QString name, int power);
 	
+	public slots:
+		void publishSensorData(QString sensor, int data);
+
 	private:
         ros::NodeHandle *nodeHandle_;
-        ros::Timer timer;
         ros::Subscriber ledSubscriber;
         ros::Subscriber velocitySubscriber;
-		QThread *coap_thread;
+		QScopedPointer<QThread> coap_thread;
 		TrikCoapClient *coap_client;
+		QVector<QString> sensorPorts;
+		QMap<QString, ros::Publisher> publishers;
 };
 
